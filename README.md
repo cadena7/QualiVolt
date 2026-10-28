@@ -1,113 +1,111 @@
 # QualiVolt
 
-Aplicación de escritorio en Python para leer y explorar mediciones de calidad de la energía del **HT Instruments PQA820**, directamente desde grabaciones **HED/PER** compatibles o desde archivos CSV exportados por TopView.
+**Lector y analizador de calidad de la energía para el HT Instruments PQA820.**
 
-**QualiVolt** combina calidad de la energía y voltaje en una interfaz para explorar tus mediciones. El nombre aparece en la app y en el pie de cada página de los informes; el resumen destaca en negritas los valores relevantes.
+Abre grabaciones HED/PER sin iniciar TopView, explora las mediciones y genera reportes PDF con gráficas. También acepta exportaciones CSV compatibles de TopView.
 
-Permite consultar los canales por función, comparar mediciones en gráficas interactivas y revisar estadísticas sin modificar los archivos originales.
+**Autor:** Edgar Omar Cadena Zepeda  
+**Versión:** 1.0.0 · 28 de octubre de 2026
 
-**Autor y créditos: Edgar Omar Cadena Zepeda.**
+## Antes de empezar
 
-## Estado del proyecto
+- Instala **Python 3.11 o posterior**.
+- Necesitas una computadora con entorno gráfico e Internet para instalar las dependencias la primera vez.
+- Descarga el proyecto completo desde GitHub: **Code → Download ZIP**, y descomprime el ZIP. También puedes clonar el repositorio con Git.
+- Conserva la carpeta `assets/` junto al programa; contiene recursos necesarios para ejecutarlo.
 
-Prototipo funcional en desarrollo. La importación y la interfaz se han comprobado con una grabación real de 1,668 registros y 566 canales en Windows. El proyecto está diseñado para Windows, macOS y Ubuntu; la validación en macOS y Ubuntu y los instaladores independientes están pendientes.
-
-La lectura directa **HED/PER es experimental** y no requiere TopView ni CSV. Conserva ambos archivos con el mismo nombre en la misma carpeta y selecciona el HED desde la app. Se admite el perfil de 539 campos identificado en las muestras disponibles; las estructuras desconocidas se rechazan. Entrega 534 canales, sin energías acumuladas ni cinco campos sin identificar. Se compararon 3,195,456 valores compartidos y todos los tiempos contra los CSV de SaintEX y 2m, con tolerancia absoluta de 1e-8 y sin discrepancias fuera de tolerancia. Consulta [el formato y su validación](BINARY_FORMAT.md).
-
-## Funciones disponibles
-
-- Apertura de CSV de TopView con separador `|` y declaración `sep=|`.
-- Apertura directa HED/PER compatible, con fecha inicial, intervalo y cantidad de registros leídos de HED.
-- Lectura de fechas españolas en formato de 12 horas y encabezados con unidades.
-- Configuración del sistema al abrir una grabación.
-- Frecuencia nominal del análisis de 50 o 60 Hz, con 60 Hz como valor inicial por preferencia del usuario; se muestra además una referencia aproximada basada en las mediciones.
-- Selección de sistema monofásico, trifásico de 3 hilos o trifásico de 4 hilos.
-- Tensiones nominales predefinidas y entrada de valores personalizados.
-- Canales agrupados por función y búsqueda por nombre o grupo.
-- Selección múltiple con paneles sincronizados por unidad.
-- Gráficas con zoom y desplazamiento.
-- Exportación PNG de la vista actual o de cada canal seleccionado, a 2400 píxeles de ancho.
-- Mínimo, media y máximo de los canales seleccionados para el intervalo aplicado.
-- Guardado de la configuración en un archivo JSON separado.
-- Guía de uso y sección Acerca de integradas en la aplicación.
-- Informe PDF de ocho páginas con créditos, resumen automático local, tendencias, THD, espectros armónicos, cobertura de datos y referencias normativas.
-
-### Organización de canales
-
-Los grupos aparecen en este orden, cuando existen en el archivo:
-
-1. Voltajes promedio fase-neutro.
-2. Voltajes promedio fase-fase.
-3. Corrientes promedio de fases y neutro.
-4. Distorsión armónica total de corriente: THD (%).
-5. Distorsión armónica total de voltaje: THD (%).
-6. Frecuencia promedio.
-7. Potencia activa promedio.
-8. Factor de potencia promedio.
-9. Desequilibrio promedio.
-10. Armónicos individuales de corriente (A).
-11. Armónicos individuales de voltaje (V).
-12. Lista completa de canales.
-
-## Requisitos
-
-- Python 3.11 o posterior.
-- Un entorno de escritorio con soporte para Qt.
-- Conexión a Internet para instalar las dependencias.
-- Git Bash en Windows si se utilizan los scripts `.sh`. Con PowerShell no es necesario.
-
-Dependencias de Python: **PySide6**, **PyQtGraph** y **NumPy**. Los rangos de versiones están en `requirements.txt`.
+QualiVolt está diseñado para **Windows, macOS y Ubuntu**. Se ha probado con las grabaciones incluidas en Windows; la validación completa en macOS y Ubuntu está pendiente. Por ahora se ejecuta desde Python, sin un instalador independiente.
 
 ## Instalación y ejecución
 
-Descarga o clona el repositorio y abre una terminal en su carpeta.
+Elige las instrucciones de tu sistema. **Ejecuta los comandos dentro de la carpeta que contiene `app.py`, `install.sh` y `requirements.txt`.** No es necesario activar el entorno virtual.
 
-### Windows con PowerShell
+### Windows — PowerShell, sin Git Bash
 
-Preparar el entorno e instalar dependencias:
+1. Instala Python desde [python.org para Windows](https://www.python.org/downloads/windows/). Si el instalador ofrece la opción, marca **Add Python to PATH**.
+2. Abre la carpeta del proyecto en el Explorador. Escribe `powershell` en la barra de direcciones y pulsa Enter.
+3. Comprueba que Python sea 3.11 o posterior:
+
+```powershell
+py -3 --version
+```
+
+4. Instala las dependencias, solo la primera vez:
 
 ```powershell
 py -3 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
-Ejecutar la aplicación:
+5. Abre QualiVolt:
 
 ```powershell
 .\.venv\Scripts\python.exe app.py
 ```
 
-No es necesario activar el entorno virtual. El intérprete utilizado para crear `.venv` debe ser Python 3.11 o posterior.
+**Las próximas veces**, abre PowerShell en esa carpeta y ejecuta únicamente el último comando.
 
-### macOS, Ubuntu o Windows con Git Bash
+Si `py` no está disponible pero `python --version` muestra una instalación válida, sustituye `py -3` por `python` en los comandos de preparación.
 
-Instalar:
+### Windows — alternativa con Git Bash
+
+Instala [Git para Windows](https://git-scm.com/install/windows), que incluye Git Bash, y Python 3.11 o posterior. Abre Git Bash en la carpeta del proyecto.
+
+Primera instalación:
 
 ```bash
 bash install.sh
 ```
 
-Ejecutar:
+Para abrir la app, ahora y en las siguientes ocasiones:
 
 ```bash
 bash runme.sh
 ```
 
-`install.sh` crea `.venv` si hace falta e instala las dependencias. Puede ejecutarse otra vez para volver a resolverlas según `requirements.txt`. `runme.sh` únicamente ejecuta la aplicación usando ese entorno.
+### macOS
 
-### Eliminar el entorno local
-
-Cierra la app y ejecuta desde Bash:
+1. Instala Python desde [python.org para macOS](https://www.python.org/downloads/macos/).
+2. Abre Terminal y entra en la carpeta del proyecto. Puedes escribir `cd `, arrastrar la carpeta desde Finder a Terminal y pulsar Enter.
+3. Comprueba la versión:
 
 ```bash
-bash unistall.sh
+python3 --version
 ```
 
-El script elimina únicamente `.venv` y las dependencias instaladas dentro de ese entorno. Conserva el código fuente, las mediciones, los ajustes y los reportes. No desinstala Python ni modifica paquetes globales. Para volver a preparar la app, ejecuta `bash install.sh`.
+Debe ser **3.11 o posterior**. Después instala y ejecuta:
 
-El archivo `.gitignore` excluye el entorno virtual, las cachés de Python, `tmp/`, `output/` y los ajustes `*.analysis.json` de nuevas incorporaciones a Git. Las grabaciones originales y los PDF de configuración no están excluidos; elige cuáles deseas compartir al preparar el repositorio. Los archivos que ya estén versionados no dejan de estarlo por añadirlos a `.gitignore`.
+```bash
+bash install.sh
+bash runme.sh
+```
 
-### Instalación manual en macOS o Ubuntu
+**Las próximas veces**, ejecuta únicamente `bash runme.sh` desde la carpeta del proyecto.
+
+### Ubuntu Desktop
+
+Abre una terminal e instala Python y el soporte para entornos virtuales:
+
+```bash
+sudo apt update
+sudo apt install python3 python3-venv python3-pip
+python3 --version
+```
+
+Comprueba que sea **3.11 o posterior**; si tu versión de Ubuntu proporciona un Python anterior, necesitarás un intérprete compatible antes de continuar.
+
+Entra en la carpeta descargada. Por ejemplo, escribe `cd ` y arrástrala desde el administrador de archivos a la terminal. Instala y ejecuta:
+
+```bash
+bash install.sh
+bash runme.sh
+```
+
+**Las próximas veces**, ejecuta únicamente `bash runme.sh` desde esa carpeta. La app necesita una sesión de escritorio; no es una aplicación para servidores sin pantalla.
+
+### Alternativa manual en macOS y Ubuntu
+
+Si prefieres no usar los scripts:
 
 ```bash
 python3 -m venv .venv
@@ -115,147 +113,137 @@ python3 -m venv .venv
 .venv/bin/python app.py
 ```
 
-## Uso
+### ¿Qué hacen los scripts?
 
-### Proyectos, intervalos y espectro
-
-- **Archivo → Guardar proyecto…** guarda un `.qvp` con título, configuración, punto de medición si se ha elegido, canales seleccionados, intervalo y notas del estudio. **Archivo → Abrir proyecto…** recupera esos datos. El proyecto referencia la medición mediante una ruta relativa; conserva el proyecto y los originales HED/PER con su estructura de carpetas al compartirlos. No copia ni modifica las mediciones.
-- En **Desde / Hasta**, elige los límites y pulsa **Aplicar**. **Usar zoom** toma el intervalo horizontal visible de la gráfica principal; **Todo** vuelve a la grabación completa. Las estadísticas, el espectro y los nuevos informes PDF usan exclusivamente los registros del intervalo aplicado, incluyendo los extremos.
-- En **Tendencias sincronizadas**, selecciona canales de distintas unidades con Ctrl/Cmd. Se crea un panel por unidad, con escalas verticales independientes y eje temporal compartido. Desplaza o amplía horizontalmente cualquier panel; el cursor muestra la muestra más cercana y valores de hasta cinco canales. Puedes desplazarte verticalmente para consultar los demás paneles.
-- En **Espectro armónico**, elige V1/V2/V3 o I1/I2/I3 y alterna porcentaje de la fundamental o amplitud RMS temporal en V/A. Muestra órdenes 2–49; la fundamental es la referencia del porcentaje. El cursor muestra el valor y la cantidad de registros válidos de cada orden. Exportar PNG e imprimir usan el espectro cuando esa pestaña está activa.
-
-El porcentaje armónico es una razón de RMS temporales sobre pares válidos, no una reconstrucción de forma de onda. El zoom por sí solo no cambia el intervalo de análisis: pulsa **Usar zoom** para aplicarlo.
-
-1. Copia los archivos HED y PER de la grabación en la misma carpeta, conservando sus nombres iguales. También puedes usar un CSV de TopView.
-2. Pulsa **Abrir grabación** y selecciona el **HED**. El lector encuentra automáticamente su **PER** en la misma carpeta. Para abrir una exportación, cambia el filtro del diálogo a **CSV**.
-3. Escribe el **Título de proyecto** y revisa la configuración del sistema antes de analizarlo. El título se propone con el nombre del archivo y puedes cambiarlo después en **Configuración**.
-4. Expande los grupos y selecciona un canal. Usa Ctrl, o Cmd según la plataforma, para seleccionar varios; las distintas unidades se muestran en paneles sincronizados.
-5. Usa el buscador para localizar canales: por ejemplo, `V1`, `THD` o `har05`.
-6. Acerca o aleja con la rueda del ratón y arrastra para desplazarte por la gráfica.
-7. Consulta las estadísticas debajo de la gráfica. Corresponden al intervalo aplicado. Usa Aplicar o Usar zoom para cambiarlo.
-8. Si lo deseas, guarda los ajustes con **Guardar configuración…**.
-
-La guía también está disponible en el botón **Guía de uso** y en el menú **Ayuda**.
-
-El menú **Archivo** reúne abrir (`Ctrl+O`), cerrar grabación (`Ctrl+W`), configuración, guardar ajustes (`Ctrl+S`), exportar PDF/PNG, vista previa, imprimir la gráfica visible (`Ctrl+P`) y salir. Los atajos usan la tecla equivalente de la plataforma cuando corresponde. La impresión conserva el zoom y añade el título del proyecto y los créditos. Cerrar una grabación limpia la vista sin eliminar archivos; guarda previamente los ajustes que quieras conservar.
-
-En **Apariencia**, elige **Tema claro** o **Tema oscuro**. La selección se recuerda entre sesiones y cambia la interfaz y las gráficas: fondo, texto, ejes, cuadrícula y curvas. Los PNG y la impresión de la gráfica visible conservan el tema elegido; los informes PDF mantienen su diseño de fondo blanco para lectura e impresión.
-
-### Exportar gráficas PNG
-
-En la parte superior del panel de gráficas, pulsa **Exportar PNG** para guardar la gráfica visible con los canales seleccionados y el zoom actual. La flecha del botón ofrece **Un PNG por canal seleccionado…**: selecciona una carpeta y se guardará una imagen independiente por canal, conservando el intervalo horizontal visible y ajustando la escala vertical de cada imagen. Si un nombre ya existe en la exportación por canal, se añade un número para conservarlo. Las imágenes tienen 2400 píxeles de ancho.
-
-### Informe automático PDF
-
-Pulsa **Informe PDF**, revisa el título de proyecto, responsable y punto de medición. Primero se abre una **vista previa dentro de la app**, con todas las páginas y opciones de zoom. Desde ahí puedes **Guardar PDF…**, **Imprimir…** (incluido un rango de páginas) o cerrar sin guardar. El título del proyecto se utiliza en la portada y en los metadatos del PDF, y se incluye al guardar la configuración JSON. Los créditos de **Edgar Omar Cadena Zepeda** aparecen siempre, aunque cambie el responsable del estudio. No requiere paquetes adicionales a las dependencias de la interfaz.
-
-La interfaz y los informes utilizan **Geist Sans**: Regular para textos y gráficas, SemiBold para títulos del PDF y Bold para los resultados destacados. La fuente se incluye en `assets/fonts/Geist/` con su licencia SIL OFL 1.1 y se carga localmente. No necesitas instalarla; conserva esa carpeta al descargar o distribuir el proyecto.
-
-Incluye tendencias de voltaje fase-neutro y fase-fase, corrientes de fases, potencias totales activa/reactiva/aparente, factor de potencia total, THD de voltaje/corriente, frecuencia, espectros por fase, estadísticas de corriente de neutro y referencias técnicas. El resumen se calcula localmente mediante reglas y estadísticas; no envía datos a una IA o servicio externo. Analiza el intervalo aplicado, o toda la grabación si no hay selección temporal.
-
-Los espectros muestran la razón de RMS temporales `100 × sqrt(sum(Hh²)/sum(H1²))` para cada orden 2-49 usando pares de valores válidos y fundamental mayor que cero. No son una forma de onda instantánea, TDD ni percentiles normativos. Los valores negativos y no finitos se excluyen de las magnitudes no negativas del reporte, sin alterar los originales. Los ceros se conservan y una fundamental pequeña puede aumentar los porcentajes de corriente.
-
-Referencias incluidas: IEEE 519-2022 (armónicos en el PCC), IEEE 1159-2019 (monitoreo), ANSI/NEMA C84.1-2020 (R2025) (tensiones de sistemas de 60 Hz) y Código de Red mexicano RES/550/2021. El reporte presenta explicaciones breves de estas referencias y una única nota de alcance al final. **No implementa tablas normativas ni declara cumplimiento.** La evaluación formal requiere confirmar punto de conexión, nivel de suministro, demanda, IL/Isc cuando corresponda, ventanas de agregación, duración y edición aplicable. THD de corriente no debe confundirse con TDD.
-
-### Configuración del sistema
-
-| Campo | Comportamiento |
+| Archivo | Función |
 | --- | --- |
-| Frecuencia nominal | 60 Hz por defecto, editable a 50 Hz. Es independiente del ajuste del instrumento (50 Hz en los reportes disponibles) y de la frecuencia medida. |
-| Sistema | Monofásico, trifásico de 3 hilos, trifásico de 4 hilos o sin confirmar. Para el perfil HED contrastado con los reportes oficiales se precarga trifásico de 4 hilos como sugerencia editable; otras firmas y CSV quedan sin confirmar. |
-| Referencia de las mediciones | Fase-neutro por defecto; editable e independiente del nominal del sistema. |
-| Tensión nominal del sistema | 220 V por defecto; admite valores predefinidos y personalizados. El valor 0 indica pendiente. |
-| Referencia del nominal | Fase-fase en trifásico; fase-neutro o fase-fase en monofásico. Queda sin confirmar mientras no se elija el sistema. |
-| Relaciones TC/TP | Se guardan como metadatos; no reescalan las mediciones del CSV. |
+| `install.sh` | Crea `.venv` e instala las dependencias de `requirements.txt`. |
+| `runme.sh` | Ejecuta la app con el entorno preparado; no instala paquetes. |
+| `unistall.sh` | Elimina únicamente `.venv` y sus dependencias. Conserva código, mediciones y reportes. |
 
-Por ejemplo, un sistema trifásico puede configurarse con **220 V nominales fase-fase** y conservar **fase-neutro como referencia de las mediciones**. Estos ajustes no convierten los valores exportados.
+El instalador prepara las dependencias necesarias. No necesitas instalar las fuentes por separado.
 
-Los valores iniciales no se han obtenido de la cabecera `.HED`; deben revisarse para cada instalación.
+## Primera medición: guía rápida
 
-## Formato de entrada y criterios de lectura
+### 1. Abrir los archivos
 
-- Separador `|`, con soporte para una primera línea `sep=|`.
-- Primera columna de fecha y hora, como `08/10/2026 12:28:00 p. m.`.
-- Canales numéricos con sus nombres y unidades originales.
-- Codificación UTF-8, con o sin BOM, o CP1252.
-- Se comprueba la cantidad de columnas y que los tiempos estén en orden creciente, sin duplicados.
-- Las horas se conservan como las registró el equipo, sin conversión de zona horaria.
-- THD se muestra en porcentaje; los armónicos individuales conservan su amplitud en A o V.
-- Los valores `-1` se conservan y participan en las estadísticas: su significado en la exportación está pendiente de validar.
+Pulsa **Abrir grabación** o usa **Archivo → Abrir grabación…**.
 
-La compatibilidad con otras variantes de exportación de TopView todavía debe comprobarse.
-
-## Instrumento de referencia
-
-El **HT Instruments PQA820** es un analizador de calidad de la energía para sistemas monofásicos y trifásicos. Entre sus funciones se encuentran el registro de hasta 383 parámetros simultáneos, armónicos de tensión y corriente hasta el orden 49, THD, potencias, energías y corriente de neutro.
-
-Estas características corresponden al instrumento. La información que puede mostrar esta aplicación depende del contenido del CSV exportado.
-
-Consulta las especificaciones y documentación en el [sitio oficial del HT PQA820](https://www.ht-instruments.com/en/products/power-quality-analyzers/wifi/pqa820/).
-
-## Estructura del proyecto
+Selecciona el **`.HED`**. El `.PER` contiene las mediciones y debe estar en la misma carpeta, con exactamente el mismo nombre base:
 
 ```text
-.
-├── app.py             # Interfaz gráfica, configuración y visualización
-├── appearance.py      # Temas claro/oscuro
-├── typography.py      # Carga de Geist Sans
-├── branding.py        # Nombre, autor y versión
-├── study_view.py      # Intervalos y espectro interactivo
-├── project.py         # Guardado y recuperación de proyectos
-├── analysis_report.py # Generación del informe PDF
-├── report_preview.py  # Vista previa e impresión del informe
-├── assets/fonts/Geist/ # Fuentes y licencias necesarias
-├── files/             # Grabaciones de prueba y referencias
-├── reader.py          # Importación y validación del CSV
-├── binary_reader.py   # Lectura directa experimental HED/PER
-├── test_binary_reader.py # Pruebas y comparación con CSV local
-├── BINARY_FORMAT.md   # Estructura observada y alcance de validación
-├── requirements.txt   # Dependencias de Python
-├── install.sh         # Preparación del entorno e instalación
-├── runme.sh           # Ejecución con el entorno preparado
-├── unistall.sh        # Elimina solamente el entorno .venv
-├── .gitignore         # Excluye entorno, cachés y resultados locales
-└── README.md
+medicion.HED
+medicion.PER
 ```
 
-## Limitaciones y próximos pasos
+Para abrir un CSV de TopView, cambia el filtro del diálogo a **Exportación TopView CSV**.
 
-- Ampliar y validar la lectura HED/PER con más perfiles, firmware y configuraciones; resolver campos pendientes y energías.
-- Añadir importación de los antiguos JSON de configuración; los proyectos `.qvp` ya permiten guardar y recuperar el estudio.
-- Validar el significado de los valores especiales y el tratamiento de datos ausentes.
-- Incorporar exportación Excel y reglas normativas verificadas con parámetros de conexión y agregaciones adecuados.
-- Ampliar el análisis de eventos según los datos disponibles.
-- Validar la aplicación en macOS y Ubuntu y preparar paquetes por plataforma.
+En `files/` hay grabaciones de ejemplo para probar la aplicación.
 
-Las series agregadas del CSV no permiten reconstruir formas de onda ni eventos breves que no se hayan exportado. Esta versión tampoco realiza una evaluación automática de cumplimiento normativo.
+### 2. Revisar la configuración
 
-## Solución de problemas
+Al abrir una grabación aparece la configuración del proyecto:
 
-**Windows indica que no encuentra Python o abre Microsoft Store:** instala Python 3.11 o posterior, cierra y vuelve a abrir la terminal. Si `python3` apunta al alias de Microsoft Store, utiliza los comandos de PowerShell con `py -3` para preparar el entorno.
+- **Título de proyecto:** se propone el nombre del archivo; puedes cambiarlo. Se utiliza en el informe.
+- **Frecuencia nominal del análisis:** 60 Hz por defecto, editable a 50 Hz. Es independiente del ajuste del medidor y de la frecuencia medida.
+- **Sistema:** monofásico, trifásico de 3 hilos o trifásico de 4 hilos. El perfil HED reconocido propone trifásico de 4 hilos; siempre puedes corregirlo.
+- **Tensión nominal:** 220 V por defecto, con opciones predefinidas y valor personalizado.
+- **Referencia de medición:** fase-neutro o fase-fase, independiente del nominal del sistema. En trifásico, el nominal del sistema es fase-fase; en monofásico puedes elegir la referencia.
+- **Relaciones TC/TP:** se guardan como información del estudio; no multiplican los valores leídos.
 
-**No se puede crear `.venv` en Ubuntu:** comprueba que esté instalado el paquete `python3-venv` correspondiente a tu versión de Python.
+Puedes volver a editar estos campos desde **Configuración**.
 
-**Faltan módulos:** ejecuta de nuevo `bash install.sh` o instala `requirements.txt` con el intérprete del entorno virtual.
+### 3. Elegir canales y explorar
 
-**La gráfica no muestra la selección:** pulsa Todo para recuperar el intervalo completo y selecciona un canal. Los canales con unidades diferentes aparecen en paneles separados.
+Los canales están agrupados por función: voltajes, corrientes, THD, frecuencia, potencias, factor de potencia, desequilibrio y armónicos. Al final está la lista completa.
 
-## Contribuciones
+- **Clic izquierdo:** selecciona un canal.
+- **Ctrl + clic**, o Cmd según la plataforma: selección múltiple.
+- **Clic derecho:** añade o quita un canal conservando los demás.
+- **Buscador:** escribe, por ejemplo, `V1`, `THD` o `har05`.
 
-Las propuestas de mejora y los reportes de errores son bienvenidos. Al reportar un problema, incluye el sistema operativo, la versión de Python, los pasos para reproducirlo y el mensaje de error. Si aportas una muestra de datos, utiliza una grabación que tengas permiso de compartir.
+La escala se ajusta al cambiar de selección. Cada unidad tiene su propio panel y los paneles comparten el tiempo. Usa la rueda para ampliar y arrastra para desplazarte; el cursor permite consultar valores sincronizados.
+
+En los nombres, **Avg** significa promedio, **Max** máximo y **Min** mínimo.
+
+### 4. Analizar un intervalo
+
+Usa los campos **Desde / Hasta** y pulsa **Aplicar**. También puedes ampliar una zona y pulsar **Usar zoom**. **Todo** vuelve a la grabación completa.
+
+Las estadísticas, el espectro y los nuevos informes usan el intervalo aplicado. Ampliar la gráfica por sí solo no cambia el período del análisis.
+
+### 5. Consultar armónicos
+
+En **Espectro armónico**, elige V1/V2/V3 o I1/I2/I3. Puedes ver los órdenes 2–49 como porcentaje de la fundamental o como amplitud RMS del período en V/A. Al mover el cursor sobre las barras aparecen su valor y cantidad de registros válidos.
+
+### 6. Guardar gráficas o generar un informe
+
+**Exportar PNG** guarda la gráfica o el espectro de la pestaña activa a 2400 píxeles de ancho. Su menú también permite generar una imagen por canal seleccionado. El tema claro/oscuro se conserva en las imágenes.
+
+**Informe PDF** permite revisar título, responsable y punto de medición: salida de transformador, tablero principal, tablero secundario o carga individual. Después se abre la **vista previa dentro de QualiVolt**. Desde ahí puedes guardar, imprimir todo o un rango de páginas, o cerrar sin guardar.
+
+El informe tiene ocho páginas con resumen, tendencias, potencias activa/reactiva/aparente, factor de potencia, THD, espectros, estadísticas y referencias técnicas. Puedes editar el nombre del responsable del análisis antes de generar el informe.
+
+### 7. Guardar y reabrir un proyecto
+
+En **Archivo → Guardar proyecto…**, guarda un `.qvp` con título, ajustes, canales, intervalo y notas. Para recuperarlo, usa **Archivo → Abrir proyecto…**.
+
+**El proyecto no contiene las mediciones:** guarda referencias relativas a los originales. Si lo compartes, incluye también HED/PER y conserva la estructura de carpetas.
+
+Para recuperar el estudio utiliza **Guardar proyecto…**. **Guardar configuración…** permite exportar una copia de los ajustes en JSON.
+
+## Apariencia y menús
+
+En **Apariencia** puedes elegir **Tema claro** o **Tema oscuro**. La app recuerda tu elección y adapta fondo, ejes, cuadrícula, leyendas y curvas. Los reportes PDF mantienen fondo blanco.
+
+El menú **Archivo** incluye abrir, cerrar, proyectos, configuración, exportar, vista previa, imprimir la gráfica visible y salir. **Ayuda** contiene la guía y Acerca de.
+
+## Actualizar, mover o retirar la app
+
+**Actualizar dependencias:** vuelve a ejecutar `bash install.sh`. En PowerShell:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+```
+
+**Mover la carpeta o cambiar de sistema operativo:** conserva el código, `assets/`, proyectos y mediciones, pero vuelve a crear `.venv` en el destino siguiendo la instalación. Los entornos virtuales no deben trasladarse entre rutas o computadoras. Si ya copiaste uno, elimina solamente la carpeta `.venv` antes de instalar de nuevo.
+
+**Eliminar el entorno:** cierra QualiVolt y ejecuta `bash unistall.sh`, o elimina únicamente `.venv` desde el administrador de archivos. Python, el código y tus mediciones se conservan.
+
+## Problemas frecuentes
+
+| Problema | Solución |
+| --- | --- |
+| Windows dice que no encuentra Python o abre Microsoft Store | Instala Python, vuelve a abrir la terminal y prueba `py -3 --version`. Usa las instrucciones de PowerShell si `python3` apunta al alias de Microsoft Store. |
+| `No module named PySide6` u otro módulo | Instala `requirements.txt` usando el Python de `.venv`, no otro intérprete. |
+| Ubuntu no puede crear el entorno | Instala `python3-venv` y comprueba la versión de `python3`. |
+| Error de plataforma Qt en Linux | Ejecuta desde una sesión de escritorio y revisa la biblioteca indicada en el error. Consulta la [documentación de Qt para Linux](https://doc.qt.io/qt-6/linux-requirements.html). |
+| No se encuentra el PER | Coloca HED y PER juntos y comprueba que tengan el mismo nombre base. |
+| Se rechaza una grabación | El lector admite el perfil PQA820 identificado; otros perfiles o archivos incompletos necesitan revisión. |
+| El proyecto no encuentra sus mediciones | Recupera los archivos originales y su estructura de carpetas. |
+| Faltan fuentes al abrir | Conserva `assets/fonts/Geist/` junto al código. |
+| Las gráficas no muestran el período esperado | Pulsa **Todo** y vuelve a seleccionar los canales. |
+
+## Compatibilidad
+
+QualiVolt abre grabaciones compatibles del HT PQA820 y exportaciones CSV de TopView. Si una grabación no se puede abrir, conserva el mensaje de error para reportarlo.
+
+La versión actual no muestra energías acumuladas desde archivos binarios. Los reportes son descriptivos y no realizan una evaluación automática de cumplimiento normativo. Las gráficas muestran los datos registrados; no reconstruyen formas de onda ni eventos breves ausentes en la medición.
+
+Los datos se procesan localmente en tu computadora.
 
 ## Créditos y licencia
 
-**Edgar Omar Cadena Zepeda** — autor del proyecto.
+**Edgar Omar Cadena Zepeda** — autor de QualiVolt.
 
-HT Instruments, PQA820 y TopView se mencionan para identificar el equipo y el formato de origen. Este proyecto es independiente del fabricante.
+La fuente Geist Sans incluye su licencia en `assets/fonts/Geist/`. La licencia del código de QualiVolt está pendiente de definir.
 
-La licencia de distribución y reutilización está pendiente de definir; el repositorio todavía no incluye un archivo `LICENSE`.
+HT Instruments, PQA820 y TopView se mencionan para identificar el equipo y el formato de origen. QualiVolt es un proyecto independiente del fabricante.
 
-## Pruebas
+## Documentación de instalación
 
-```bash
-python -m unittest discover -v
-```
+- [Descargas oficiales de Python](https://www.python.org/downloads/).
+- [Entornos Python en Ubuntu](https://ubuntu.com/developers/docs/howto/python-setup/).
+- [Instalación de Qt para Python / PySide6](https://doc.qt.io/qtforpython-6/gettingstarted.html).
 
-Las grabaciones de ejemplo están en `files/`. Las pruebas binarias comparan con CSV solo si están presentes junto a los HED/PER; consulta `files/README.md`. Para ejecutar todas las pruebas, instala primero las dependencias de `requirements.txt`.
+Para colaborar con el código, consulta [Desarrollo y pruebas](DEVELOPMENT.md).
