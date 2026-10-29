@@ -7,11 +7,24 @@ Abre grabaciones HED/PER sin iniciar TopView, explora las mediciones y genera re
 **Autor:** Edgar Omar Cadena Zepeda  
 **Versión:** 1.0.0 · 28 de octubre de 2026
 
+## Vista previa
+
+![QualiVolt: interfaz en tema oscuro con gráficas sincronizadas de voltajes y corrientes](assets/screenshots/qualivolt-preview.png)
+
+Captura real de la interfaz con **datos simulados de demostración**.
+
+[Repositorio en GitHub](https://github.com/cadena7/QualiVolt)
+
 ## Antes de empezar
 
 - Instala **Python 3.11 o posterior**.
 - Necesitas una computadora con entorno gráfico e Internet para instalar las dependencias la primera vez.
-- Descarga el proyecto completo desde GitHub: **Code → Download ZIP**, y descomprime el ZIP. También puedes clonar el repositorio con Git.
+- Descarga el proyecto desde [GitHub](https://github.com/cadena7/QualiVolt): **Code → Download ZIP**, y descomprime el ZIP. También puedes clonarlo con Git:
+
+```bash
+git clone https://github.com/cadena7/QualiVolt.git
+cd QualiVolt
+```
 - Conserva la carpeta `assets/` junto al programa; contiene recursos necesarios para ejecutarlo.
 
 QualiVolt está diseñado para **Windows, macOS y Ubuntu**. Se ha probado con las grabaciones incluidas en Windows; la validación completa en macOS y Ubuntu está pendiente. Por ahora se ejecuta desde Python, sin un instalador independiente.
