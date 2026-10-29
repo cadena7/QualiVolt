@@ -44,6 +44,13 @@ def load_csv(path):
     return headers[1:], times, values
 
 
+def channel_value(name, value):
+    """-1 en PF/dPF indica cuadrante no definido (manual §12.3.1)."""
+    if name.startswith(('Pf', 'dpf')) and value == -1:
+        return math.nan
+    return value
+
+
 def suggested_frequency(headers, values):
     if 'freq_Avg [Hz]' not in headers:
         return None

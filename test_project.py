@@ -7,7 +7,7 @@ from project import read_project, save_project
 
 class ProjectTests(unittest.TestCase):
     def test_roundtrip_and_missing_source(self):
-        with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
+        with tempfile.TemporaryDirectory() as directory:
             folder=Path(directory)
             source=folder/'sample.HED';source.write_bytes(b'example')
             project=folder/'study.qvp'

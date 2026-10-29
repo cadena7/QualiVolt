@@ -1,0 +1,20 @@
+# Entorno local y cachés de Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Archivos temporales e informes generados
+/tmp/
+/output/
+*.analysis.json
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+
+# Proyectos, exportaciones y temporales locales
+*.qvp
+*.report.pdf
+*.graph.png
+/tmp*/

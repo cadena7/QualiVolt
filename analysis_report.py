@@ -85,6 +85,39 @@ class Analysis:
             counts.append(len(pairs))
         return output, counts
 
+    def amplitude_spectrum(self, phase):
+        unit = 'V' if phase.startswith('V') else 'A'
+        values, counts = [], []
+        for order in range(2,50):
+            valid = [v for v in self.series(f'har{order:02}{phase}_Avg [{unit}]') if math.isfinite(v)]
+            values.append(math.sqrt(sum(v*v for v in valid)/len(valid)) if valid else math.nan)
+            counts.append(len(valid))
+        return values, counts
+
+    def display_spectrum(self, phase):
+        values, counts = self.spectrum(phase)
+        if any(math.isfinite(v) for v in values):
+            return values, counts, '%', ''
+        values, counts = self.amplitude_spectrum(phase)
+        unit = 'V' if phase.startswith('V') else 'A'
+        note = f'Sin fundamental positiva; amplitudes en {unit}.'
+        if any(math.isfinite(v) for v in values) and all(not math.isfinite(v) or v == 0 for v in values):
+            note = f'Armónicos registrados en 0 {unit}; vista de amplitudes.'
+        return values, counts, unit, note
+
+    def total_power_factors(self):
+        output = [('Total inductivo', []), ('Total capacitivo', [])]
+        def value(row,name):
+            index=self.indices.get(name)
+            return row[index] if index is not None else math.nan
+        for row in self.rows:
+            imported=value(row,'Pt+_Avg [W]');generated=value(row,'Pt-_Avg [W]')
+            direction = '-' if math.isfinite(generated) and generated > max(imported if math.isfinite(imported) else 0,0) else '+'
+            for (_,series),kind in zip(output,('i','c')):
+                pf=value(row,f'Pft{kind}{direction}_Avg')
+                series.append(pf if math.isfinite(pf) and 0<=pf<=1 else math.nan)
+        return [(name,series) for name,series in output if any(math.isfinite(v) for v in series)]
+
     def findings(self):
         notes = []
         for prefix, label in [('thdV', 'voltaje'), ('thdI', 'corriente')]:
@@ -152,12 +185,12 @@ def export_report(path, data, config, source, context=None):
         painter.drawText(QRectF(20,page_height-30,680,24), Qt.AlignLeft | Qt.AlignVCenter,
                          f'{APP_NAME} | {AUTHOR} | Análisis orientativo | {page}')
 
-    def chart(title, names, rect, unit):
+    def chart(title, names, rect, unit, supplied_series=None):
         plot = QRectF(rect.x()+55,rect.y()+35,rect.width()-70,rect.height()-(100 if len(names)>3 else 83))
-        series = [(name, analysis.series(name)) for name in names]
+        series = supplied_series if supplied_series is not None else [(name, analysis.series(name)) for name in names]
         valid = [v for _,vs in series for v in vs if math.isfinite(v)]
         axis_unit = unit
-        power = unit in ('W','var','VA')
+        power = unit in ('W','var','VA','A')
         factor = unit == 'sin unidad'
         power_top = 1.0
         if valid and power:
@@ -192,7 +225,8 @@ def export_report(path, data, config, source, context=None):
         t = analysis.times
         duration = max((t[-1]-t[0]).total_seconds(),1)
         for n,(name,values) in enumerate(series):
-            painter.setPen(QPen(QColor(colors[n%len(colors)]),1))
+            color_index = 1 if name == 'Total capacitivo' else 0 if name == 'Total inductivo' else n % len(colors)
+            painter.setPen(QPen(QColor(colors[color_index]),1))
             previous=None
             for stamp,value in zip(t,values):
                 if not math.isfinite(value):
@@ -202,37 +236,43 @@ def export_report(path, data, config, source, context=None):
                 if previous is not None:
                     painter.drawLine(previous,point)
                 previous=point
-            painter.drawText(QRectF(plot.x()+(n%3)*190,plot.bottom()+22+(n//3)*17,190,18),Qt.AlignLeft,name.split('_')[0])
+            legend_name = {
+                'Pt+':'Consumo (+)', 'Pt-':'Generación (−)',
+                'St+':'Consumo (+)', 'St-':'Generación (−)',
+                'Qti+':'Inductiva · consumo (+)', 'Qtc+':'Capacitiva · consumo (+)',
+                'Qti-':'Inductiva · generación (−)', 'Qtc-':'Capacitiva · generación (−)',
+            }.get(name.split('_')[0], name.split('_')[0])
+            painter.drawText(QRectF(plot.x()+(n%3)*190,plot.bottom()+22+(n//3)*17,190,18),Qt.AlignLeft,legend_name)
         painter.setPen(QColor('#334455'))
         painter.drawText(QRectF(plot.x(),plot.bottom()+4,210,18),Qt.AlignLeft,t[0].strftime('%d/%m %H:%M'))
         painter.drawText(QRectF(plot.right()-210,plot.bottom()+4,210,18),Qt.AlignRight,t[-1].strftime('%d/%m %H:%M'))
 
     def spectrum_chart(phase, rect):
-        values,counts=analysis.spectrum(phase)
+        values,counts,unit,spectrum_note=analysis.display_spectrum(phase)
         valid=[v for v in values if math.isfinite(v)]
-        html(f'<b>{phase} · órdenes 2-49</b>',QRectF(rect.x(),rect.y(),rect.width(),26))
+        html(f'<b>{phase} · órdenes 2-49 ({unit})</b>',QRectF(rect.x(),rect.y(),rect.width(),26))
         if not valid:
-            html('Sin señal suficiente para calcular el espectro.',QRectF(rect.x(),rect.y()+35,rect.width(),50))
+            html('No hay valores registrados para estos armónicos.',QRectF(rect.x(),rect.y()+35,rect.width(),50))
             return
         plot=QRectF(rect.x()+48,rect.y()+30,rect.width()-60,rect.height()-80)
-        top=max(max(valid)*1.12,.1)
+        top=max(max(valid)*1.12,.1) if max(valid)>0 else 1.0
         painter.setFont(QFont(FONT_FAMILY,8))
         for k in range(4):
             y=plot.bottom()-k*plot.height()/3
             painter.setPen(QPen(QColor('#dce3e9'),.7))
             painter.drawLine(QPointF(plot.left(),y),QPointF(plot.right(),y))
             painter.setPen(QColor('#334455'))
-            painter.drawText(QRectF(rect.x(),y-8,44,18),Qt.AlignRight,f'{top*k/3:.2g}%')
+            painter.drawText(QRectF(rect.x(),y-8,44,18),Qt.AlignRight,f'{top*k/3:.2g}' + ('%' if unit=='%' else ''))
         step=plot.width()/48
         for n,value in enumerate(values):
             if math.isfinite(value):
                 barheight=value/top*plot.height()
                 painter.fillRect(QRectF(plot.x()+n*step,plot.bottom()-barheight,step*.75,barheight),QColor(colors[int(phase[-1])-1]))
-            if n==0 or (n+2)%5==0 or n==47:
+            if n+2 in (3,5,7,9,10,15,20,25,30,35,40,45,49):
                 painter.setPen(QColor('#334455'))
                 painter.drawText(QRectF(plot.x()+n*step-8,plot.bottom()+3,26,16),Qt.AlignCenter,str(n+2))
         painter.drawText(QRectF(plot.x(),plot.bottom()+22,plot.width(),22),Qt.AlignLeft,
-                         f'Registros utilizados por orden: {min(counts)}-{max(counts)} de {len(analysis.rows)}.')
+                         spectrum_note or f'Registros utilizados por orden: {min(counts)}-{max(counts)} de {len(analysis.rows)}.')
 
     try:
         source=Path(source)
@@ -254,17 +294,22 @@ def export_report(path, data, config, source, context=None):
              QRectF(20,75,680,page_height-120))
 
         new_page('Tendencias · voltaje y corriente')
-        chart('Voltaje fase-neutro promedio',[f'V{i}_Avg [V]' for i in (1,2,3)],QRectF(20,80,680,255),'V')
-        chart('Voltaje fase-fase promedio',[f'V{i}_Avg [V]' for i in ('12','23','31')],QRectF(20,350,680,255),'V')
-        chart('Corrientes promedio',[f'I{i}_Avg [A]' for i in (1,2,3)],QRectF(20,620,680,235),'A')
+        chart('Voltaje fase-neutro promedio',[f'V{i}_Avg [V]' for i in (1,2,3)],QRectF(20,90,680,330),'V')
+        chart('Voltaje fase-fase promedio',[f'V{i}_Avg [V]' for i in ('12','23','31')],QRectF(20,450,680,330),'V')
+        new_page('Corrientes de fases y neutro')
+        chart('Corrientes por fase',[f'I{i}_Avg [A]' for i in (1,2,3)],QRectF(20,90,680,330),'A')
+        chart('Corriente de neutro',['In_Avg [A]'],QRectF(20,450,680,330),'A')
 
         new_page('Potencias y factor de potencia')
-        html('Valores totales promedio por intervalo. Las curvas + y − conservan los sentidos de flujo '
-             'del registro; i identifica componente inductiva y c, capacitiva.',QRectF(20,75,680,65))
+        html('Activa y aparente: <b>azul = consumo (+)</b>; <b>naranja = generación (−)</b>.<br>'
+             'Reactiva: azul/verde = inductiva; naranja/violeta = capacitiva.<br>'
+             'Factor de potencia: <b>azul = inductivo</b>; <b>naranja = capacitivo</b>.',QRectF(20,75,680,65))
         chart('Potencia activa total',['Pt+_Avg [W]','Pt-_Avg [W]'],QRectF(20,145,680,180),'W')
         chart('Potencia reactiva total',['Qti+_Avg [VAR]','Qtc+_Avg [VAR]','Qti-_Avg [VAR]','Qtc-_Avg [VAR]'],QRectF(20,335,680,190),'var')
         chart('Potencia aparente total',['St+_Avg [VA]','St-_Avg [VA]'],QRectF(20,535,680,180),'VA')
-        chart('Factor de potencia total',['Pfti+_Avg','Pftc+_Avg','Pfti-_Avg','Pftc-_Avg'],QRectF(20,725,680,190),'sin unidad')
+        total_pf=analysis.total_power_factors()
+        chart('Factor de potencia total',[name for name,_ in total_pf],QRectF(20,725,680,190),'sin unidad',total_pf)
+        html('FP total inductivo/capacitivo: en cada intervalo se utiliza el sentido de flujo con mayor potencia activa.',QRectF(20,925,680,45))
 
         new_page('Tendencias · THD y frecuencia')
         chart('THD de voltaje promedio',[f'thdV{i}_Avg [%]' for i in (1,2,3)],QRectF(20,80,680,255),'%')
@@ -274,12 +319,12 @@ def export_report(path, data, config, source, context=None):
         for kind,label in [('V','voltaje'),('I','corriente')]:
             new_page(f'Espectro armónico · {label}')
             html('Cada barra representa un armónico como porcentaje de la fundamental. '
-                 'Las barras más altas muestran los órdenes con mayor presencia durante la grabación.',QRectF(20,75,680,100))
+                 'Las barras más altas muestran los órdenes con mayor presencia. Si la fundamental es cero, se muestran amplitudes en A o V.',QRectF(20,75,680,100))
             for phase in (1,2,3):
                 spectrum_chart(f'{kind}{phase}',QRectF(20,180+(phase-1)*235,680,225))
 
         new_page('Resumen de valores · configuración')
-        chosen=['V1_Avg [V]','V2_Avg [V]','V3_Avg [V]','In_Avg [A]','I1_Avg [A]','I2_Avg [A]','I3_Avg [A]','freq_Avg [Hz]']
+        chosen=['V1_Avg [V]','V2_Avg [V]','V3_Avg [V]','V12_Avg [V]','V23_Avg [V]','V31_Avg [V]','In_Avg [A]','I1_Avg [A]','I2_Avg [A]','I3_Avg [A]','freq_Avg [Hz]']
         table='<table width="100%" cellspacing="5"><tr><th>Canal</th><th>Mín.</th><th>Media</th><th>P95</th><th>Máx.</th><th>Válidos</th></tr>'
         for name in chosen:
             stats=analysis.stats(name)

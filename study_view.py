@@ -72,23 +72,25 @@ class SpectrumView(Q.QWidget):
         if not self.owner.data:
             self.details.setText('Abre una grabación.');return
         analysis=Analysis(self.owner.scoped_data());phase=self.phase.currentText()
+        spectrum_note=''
         if self.mode.currentIndex()==0:
-            values,counts=analysis.spectrum(phase);self.unit='% de fundamental'
+            values,counts,self.unit,spectrum_note=analysis.display_spectrum(phase)
         else:
-            values=[];counts=[];self.unit='V' if phase[0]=='V' else 'A'
-            for order in range(2,50):
-                series=analysis.series(f'har{order:02}{phase}_Avg [{self.unit}]')
-                valid=[v for v in series if math.isfinite(v)]
-                values.append(math.sqrt(sum(v*v for v in valid)/len(valid)) if valid else math.nan);counts.append(len(valid))
+            values,counts=analysis.amplitude_spectrum(phase)
+            self.unit='V' if phase[0]=='V' else 'A'
         self.values=values;self.counts=counts
         color=THEMES[self.owner.theme]['curves'][int(phase[-1])-1]
         valid=[(i+2,v) for i,v in enumerate(values) if math.isfinite(v)]
         if valid:
             self.graph.addItem(pg.BarGraphItem(x=[i for i,v in valid],height=[v for i,v in valid],width=.7,brush=color,pen=None))
         self.graph.setLabel('bottom','Orden armónico');self.graph.setLabel('left',self.unit)
+        self.graph.getAxis('bottom').setTicks([[(order,str(order)) for order in (3,5,7,9,10,15,20,25,30,35,40,45,49)]])
         style_graph(self.graph,self.owner.theme)
         self.graph.autoRange()
-        self.details.setText(f'{phase} · {len(analysis.times)} registros del intervalo. Pasa el cursor sobre una barra para consultar su valor.')
+        if valid and all(value==0 for _,value in valid):
+            self.graph.addItem(pg.ScatterPlotItem(x=[order for order,_ in valid],y=[0]*len(valid),size=4,brush=color,pen=None))
+            self.graph.setYRange(0,1,padding=0)
+        self.details.setText(spectrum_note or f'{phase} · {len(analysis.times)} registros del intervalo. Pasa el cursor sobre una barra para consultar su valor.')
 
     def hover(self,position):
         if not self.values or not self.graph.sceneBoundingRect().contains(position):return

@@ -13,7 +13,7 @@ class BinaryTests(unittest.TestCase):
         self.assertEqual(len(set(channels)), 534)
 
     def test_invalid_header(self):
-        with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
+        with tempfile.TemporaryDirectory() as directory:
             path = Path(directory)/'invalid.HED'
             path.write_bytes(b'not a recording')
             with self.assertRaises(ValueError):
@@ -26,7 +26,7 @@ class BinaryTests(unittest.TestCase):
         for path in paths:
             with self.subTest(path=path.name):
                 names, times, values = load_binary(path)
-                self.assertEqual(len(names), 534)
+                self.assertEqual(len(names), 566)
                 self.assertEqual(len(values), read_header(path)['registros'])
                 self.assertEqual(len(times), len(values))
                 if path.with_suffix('.csv').exists():
@@ -35,8 +35,11 @@ class BinaryTests(unittest.TestCase):
                     indices = [csv_names.index(n) for n in names]
                     for row, reference in zip(values, csv_values):
                         for actual, index in zip(row, indices):
-                            self.assertAlmostEqual(actual, reference[index], places=8)
-                with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
+                            if csv_names[index].startswith(('Ea','Er','Es')):
+                                self.assertAlmostEqual(actual, reference[index], delta=1e-7+abs(reference[index])*1e-6)
+                            else:
+                                self.assertAlmostEqual(actual, reference[index], places=8)
+                with tempfile.TemporaryDirectory() as directory:
                     copy = Path(directory)/'renamed.HED'
                     copy.write_bytes(path.read_bytes())
                     payload = path.with_suffix('.PER').read_bytes()

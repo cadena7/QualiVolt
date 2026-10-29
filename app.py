@@ -9,7 +9,7 @@ from PySide6.QtCore import Qt, QSettings
 from PySide6.QtGui import QKeySequence, QPainter, QFont, QActionGroup
 from PySide6.QtPrintSupport import QPrinter, QPrintDialog, QPrintPreviewDialog
 import pyqtgraph as pg
-from reader import load_csv, suggested_frequency
+from reader import load_csv, suggested_frequency, channel_value
 from binary_reader import load_binary, pair_paths, read_header
 from branding import APP_NAME, AUTHOR, APP_VERSION, RELEASE_DATE_LABEL
 from typography import apply_ui_font
@@ -87,7 +87,7 @@ class Window(Q.QMainWindow):
         root = Q.QWidget()
         layout = Q.QVBoxLayout(root)
         bar = Q.QHBoxLayout()
-        for title, callback in [('Abrir grabación', self.open_file), ('Configuración', self.configure), ('Guardar configuración…', self.save_config), ('Informe PDF', self.create_report), ('Guía de uso', self.show_guide)]:
+        for title, callback in [('Abrir grabación', self.open_file), ('Configuración', self.configure), ('Guardar configuración…', self.save_config), ('Generar informe', self.create_report), ('Guía de uso', self.show_guide)]:
             button = Q.QPushButton(title)
             button.clicked.connect(callback)
             bar.addWidget(button)
@@ -190,7 +190,10 @@ class Window(Q.QMainWindow):
         index=min(bisect_left(stamps,point.x()),len(stamps)-1)
         if index and abs(stamps[index-1]-point.x())<abs(stamps[index]-point.x()):index-=1
         for line in self.cursor_lines:line.setPos(stamps[index])
-        values=[f'{name}: {rows[index][headers.index(name)]:.5g}' for name in self.plotted_channels[:5]]
+        values=[]
+        for name in self.plotted_channels[:5]:
+            value=channel_value(name,rows[index][headers.index(name)])
+            values.append(f'{name}: {value:.5g}' if math.isfinite(value) else f'{name}: no definido')
         self.cursor_label.setText(f'{times[index]} · '+' | '.join(values))
 
     def visible_graph(self):
@@ -331,7 +334,7 @@ class Window(Q.QMainWindow):
                     unit = name.split(' [')[-1].rstrip(']') if ' [' in name else 'adimensional'
                     graph.setLabel('left', unit)
                     column = headers.index(name)
-                    graph.plot(x, [row[column] for row in rows], pen=pg.mkPen('#66c4ff', width=1.5), connect='finite')
+                    graph.plot(x, [channel_value(name,row[column]) for row in rows], pen=pg.mkPen('#66c4ff', width=1.5), connect='finite')
                     graph.setXRange(*current_range, padding=0)
                     graph.plotItem.vb.enableAutoRange(axis='y', enable=True)
                     graph.plotItem.vb.updateAutoRange()
@@ -491,8 +494,8 @@ class Window(Q.QMainWindow):
             para el intervalo aplicado. Usa Aplicar o Usar zoom para actualizar el análisis.</p>
             <p>Los THD están en porcentaje. Los armónicos individuales conservan
             su amplitud en A o V. Las horas corresponden al reloj del equipo,
-            sin conversión de zona horaria. Los valores -1 se conservan tal como
-            los exportó TopView; su significado está pendiente de validar.</p>
+            sin conversión de zona horaria. Los factores de potencia no definidos
+            se muestran como huecos en las gráficas y no participan en sus estadísticas.</p>
             <p>En la parte superior de la gráfica, pulsa <b>Exportar PNG</b> para guardar
             la vista actual con sus canales y zoom. La flecha del botón ofrece
             <b>Un PNG por canal seleccionado</b>, para guardar imágenes individuales
@@ -555,6 +558,7 @@ class Window(Q.QMainWindow):
             ('Desequilibrio promedio', lambda c: c.startswith('u2_Avg')),
             ('Armónicos de corriente · amplitud (A)', lambda c: c.startswith('har') and '_Avg [A]' in c),
             ('Armónicos de voltaje · amplitud (V)', lambda c: c.startswith('har') and '_Avg [V]' in c),
+            ('Energías acumuladas' + (' (calculadas)' if self.path.suffix.lower() != '.csv' else ''), lambda c: c.startswith(('Ea','Er','Es')) and '_Avg [' in c),
             ('Todos los canales · lista completa', lambda c: True),
         ]
         self.channels.blockSignals(True)
@@ -777,7 +781,7 @@ class Window(Q.QMainWindow):
             graph.setLabel('left',unit)
             graph.setLabel('bottom','Fecha y hora del registro')
             for n,name in enumerate(names):
-                y=[r[headers.index(name)] for r in rows]
+                y=[channel_value(name,r[headers.index(name)]) for r in rows]
                 graph.plot(x,y,name=name,pen=pg.mkPen(THEMES[self.theme]['curves'][n%6],width=1.8),connect='finite')
                 valid=[v for v in y if math.isfinite(v)]
                 if valid:
@@ -797,7 +801,7 @@ class Window(Q.QMainWindow):
         self.summary.setMaximumHeight(100)
         self.summary.setToolTip('\n'.join(summaries))
         summaries=summaries[:4]+[f'Intervalo analizado: {times[0]} → {times[-1]} · {len(times)} registros']
-        self.summary.setText('\n'.join(summaries) + '\nValores -1 se conservan tal como los exportó TopView; significado pendiente de validar.')
+        self.summary.setText('\n'.join(summaries))
 
 
 if __name__ == '__main__':

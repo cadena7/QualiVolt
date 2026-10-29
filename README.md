@@ -182,7 +182,7 @@ En **Espectro armónico**, elige V1/V2/V3 o I1/I2/I3. Puedes ver los órdenes 2�
 
 **Informe PDF** permite revisar título, responsable y punto de medición: salida de transformador, tablero principal, tablero secundario o carga individual. Después se abre la **vista previa dentro de QualiVolt**. Desde ahí puedes guardar, imprimir todo o un rango de páginas, o cerrar sin guardar.
 
-El informe tiene ocho páginas con resumen, tendencias, potencias activa/reactiva/aparente, factor de potencia, THD, espectros, estadísticas y referencias técnicas. Puedes editar el nombre del responsable del análisis antes de generar el informe.
+El informe tiene nueve páginas con resumen, tendencias, corrientes de fases y neutro, potencias activa/reactiva/aparente, factor de potencia total inductivo/capacitivo, THD, espectros, estadísticas de voltajes fase-neutro y fase-fase y referencias técnicas. Puedes editar el nombre del responsable del análisis antes de generar el informe.
 
 ### 7. Guardar y reabrir un proyecto
 
@@ -228,7 +228,7 @@ El menú **Archivo** incluye abrir, cerrar, proyectos, configuración, exportar,
 
 QualiVolt abre grabaciones compatibles del HT PQA820 y exportaciones CSV de TopView. Si una grabación no se puede abrir, conserva el mensaje de error para reportarlo.
 
-La versión actual no muestra energías acumuladas desde archivos binarios. Los reportes son descriptivos y no realizan una evaluación automática de cumplimiento normativo. Las gráficas muestran los datos registrados; no reconstruyen formas de onda ni eventos breves ausentes en la medición.
+Las energías acumuladas se calculan integrando las potencias promedio desde el inicio de la grabación. Los reportes son descriptivos y no realizan una evaluación automática de cumplimiento normativo. Las gráficas muestran los datos registrados; no reconstruyen formas de onda ni eventos breves ausentes en la medición.
 
 Los datos se procesan localmente en tu computadora.
 
@@ -247,3 +247,5 @@ HT Instruments, PQA820 y TopView se mencionan para identificar el equipo y el fo
 - [Instalación de Qt para Python / PySide6](https://doc.qt.io/qtforpython-6/gettingstarted.html).
 
 Para colaborar con el código, consulta [Desarrollo y pruebas](DEVELOPMENT.md).
+
+En los factores de potencia, `-1` indica un valor no definido para el cuadrante de operación. La app lo representa como un hueco y lo excluye de las estadísticas de ese canal, conservando el dato original.

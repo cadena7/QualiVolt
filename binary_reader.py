@@ -48,6 +48,17 @@ def channel_layout():
     return layout
 
 
+def energy_layout():
+    result = []
+    for prefix, energy, unit in (('P','Ea','Wh'), ('Qi','Er','VARh'), ('Qc','Er','VARh'), ('S','Es','VAh')):
+        for phase in ('t','1','2','3'):
+            for sign in ('+','-'):
+                suffix = phase + prefix[1:] + sign
+                result.append((energy + suffix + '_Avg ['+unit+']',
+                               prefix[0] + suffix + '_Avg ['+{'Wh':'W','VARh':'VAR','VAh':'VA'}[unit]+']'))
+    return result
+
+
 def read_header(path):
     b = Path(path).read_bytes()
     if len(b) != 195 or b[:4] != bytes.fromhex('2f000102') or b[13:21].strip() != b'PQA820':
@@ -98,5 +109,16 @@ def load_binary(path):
                 value = mantissa * 10.0**exponent
             data.append(value)
         values.append(data)
+    # Energía acumulada desde el primer intervalo: potencia promedio × horas.
+    # Se conserva precisión completa; TopView redondea estas columnas al exportar.
+    headers = [name for _, name in columns]
+    energies = energy_layout()
+    indices = [headers.index(power) for _, power in energies]
+    totals = [0.0] * len(energies)
+    for row in values:
+        for j,index in enumerate(indices):
+            totals[j] += row[index] * meta['intervalo_s']/3600
+        row.extend(totals)
+    headers.extend(name for name,_ in energies)
     times = [meta['inicio'] + timedelta(seconds=i*meta['intervalo_s']) for i in range(meta['registros'])]
-    return [name for _, name in columns], times, values
+    return headers, times, values

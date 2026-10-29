@@ -33,7 +33,7 @@ El orden completo se construye en `binary_reader.channel_layout()`. Bloques obse
 - 231–536: seis bloques de 51 campos, para V1, V2, V3, I1, I2 e I3: THD, componente DC y armónicos 1–49.
 - 537–538: campos finales sin identificar, omitidos.
 
-El lector entrega 534 canales y genera sus tiempos desde inicio + índice × intervalo. No depende del nombre del archivo ni necesita un CSV. No deriva las 32 columnas de energía de TopView ni inventa valores para los campos desconocidos.
+El lector decodifica 534 canales y añade 32 energías calculadas por integración de sus potencias promedio (566 columnas en total). La energía acumulada arranca en cero antes del primer intervalo y suma P × intervalo/3600, en Wh, varh o VAh. No se leen contadores de energía adicionales ni se completa información de campos desconocidos. Los tiempos se generan desde inicio + índice × intervalo.
 
 ## Verificación
 
@@ -45,4 +45,15 @@ Con las muestras locales, compara 3,195,456 valores contra los dos CSV con toler
 
 Este soporte se limita al perfil observado; una máscara o estructura distinta se rechaza. Coincidir en estructura no sustituye validar nuevos equipos, firmware o ajustes contra una referencia fiable, especialmente canales que solo contienen ceros o `-1` en las muestras disponibles.
 
-Las muestras locales se encuentran en `files/`. Las comparaciones numéricas se ejecutan solo si el CSV correspondiente está presente en esa carpeta. Actualmente se conservan los binarios y el historial de validación; los CSV no están presentes.
+Las muestras locales se encuentran en `files/`. Las comparaciones numéricas se ejecutan solo si el CSV correspondiente está presente en esa carpeta. Actualmente también están disponibles los CSV de ambas grabaciones.
+
+
+## Revisión con manuales y CSV (29/10/2026)
+
+- Los 534 canales directos continúan coincidiendo con ambos CSV con tolerancia absoluta 1e-8.
+- Las 32 energías calculadas coinciden con la exportación dentro de `1e-7 + abs(valor_csv) * 1e-6`, compatible con la precisión decimal exportada. Se conserva la precisión de integración y se documentan como calculadas.
+- El manual en español, §12.3.1, página impresa ES-28 (página 29 del PDF), define -1 en PF como no definido para el cuadrante. §12.4.2 indica que el equipo obtiene PF a partir de potencias promedio y separa inductivo/capacitivo. No se promedian factores de potencia para inventar un total.
+- La app preserva los valores crudos y representa solo los -1 de PF/dPF como NaN en la visualización y sus estadísticas; no convierte a cero los huecos ni generaliza a otros canales. Los valores negativos de algunos armónicos coinciden con los CSV y su significado sigue sin aclararse en el manual.
+- Los campos 228–230 siguen como candidatos a u0 (promedio, máximo, mínimo), por su posición contigua a u2 y la lista u2/u0 de los manuales. El CSV disponible no exporta u0: no se ha confirmado la correspondencia ni se expone como medida validada.
+- Los campos 537–538 siguen sin identificar. No se ha encontrado en los manuales una especificación de offsets HED/PER que los defina.
+- El informe muestra dos curvas totales de PF: inductivo y capacitivo. En intervalos con registros para ambos sentidos de flujo se toma el sentido con mayor potencia activa promedio; se usan los factores totales registrados de ese sentido, no los factores de cada fase.
